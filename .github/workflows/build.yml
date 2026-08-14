@@ -30,13 +30,14 @@ jobs:
         if [ ! -f buildozer.spec ]; then
           buildozer init
         fi
+        # Ensure SDK license is accepted
         sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
-        yes | buildozer -v android debug
+        # Build the APK
+        buildozer -v android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: Calculator-Python-APK
+        name: Calculator-APK
         path: |
           bin/*.apk
-          **/*.apk
