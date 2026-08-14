@@ -13,6 +13,14 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    - name: Free Disk Space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        df -h
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -25,15 +33,30 @@ jobs:
         pip install --upgrade pip setuptools
         pip install "cython<3.0.0" buildozer
 
-    - name: Build APK with Buildozer
+    - name: Generate buildozer.spec if missing
       run: |
         if [ ! -f buildozer.spec ]; then
           buildozer init
         fi
-        # Ensure SDK license is accepted
+
+    - name: Fix buildozer.spec
+      run: |
         sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
-        # Build the APK
-        buildozer -v android debug
+        sed -i 's/# android.api = 30/android.api = 33/' buildozer.spec
+        sed -i 's/# android.minapi = 21/android.minapi = 21/' buildozer.spec
+        sed -i 's/# android.ndk = 23b/android.ndk = 23b/' buildozer.spec
+        
+        # Fix requirements if needed
+        if grep -q "requirements = python3,kivy" buildozer.spec; then
+          sed -i 's/requirements = python3,kivy/requirements = python3,kivy==2.1.0/' buildozer.spec
+        fi
+
+    - name: Build APK with Buildozer
+      run: |
+        # Clean buildozer cache
+        rm -rf ~/.buildozer
+        # Build with timeout
+        buildozer -v android debug --timeout 60
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
