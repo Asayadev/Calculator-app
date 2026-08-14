@@ -18,18 +18,21 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install Dependencies
+    - name: Install System Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libsqlite3-dev sqlite3 bzip2 libbz2-dev zlib1g-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblldb-dev libffi-dev libreadline-dev libncursesw5-dev libncurses5-dev liblzma-dev tk-dev openjdk-17-jdk
-        pip install --upgrade pip
-        pip install "cython<3.0.0" "buildozer>=1.5.0"
+        sudo apt-get install -y \
+          build-essential git ffmpeg libsdl2-dev libsdl2-image-dev \
+          libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev \
+          libavformat-dev libavcodec-dev zlib1g-dev openjdk-17-jdk zip unzip \
+          autoconf libtool pkg-config libffi-dev libssl-dev
+        pip install --upgrade pip setuptools
+        pip install "cython<3.0.0" buildozer
 
     - name: Build APK with Buildozer
       run: |
-        if [ ! -f buildozer.spec ]; then
-          buildozer init
-        fi
+        buildozer init
+        sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
         yes | buildozer -v android debug
 
     - name: Upload APK
