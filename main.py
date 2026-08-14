@@ -10,21 +10,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Build with Buildozer
-      uses: ArtemShedov/buildozer-action@v1.2.1
-      with:
-        command: buildozer -v android debug
-        repository_root: .
+    - name: Install System Dependencies & Buildozer
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libsqlite3-dev sqlite3 bzip2 libbz2-dev zlib1g-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblldb-dev libffi-dev libreadline-dev libncursesw5-dev libncurses5-dev liblzma-dev tk-dev openjdk-17-jdk
+        pip install --upgrade pip
+        pip install "cython<3.0.0" "buildozer>=1.5.0"
+
+    - name: Build APK with Buildozer
+      run: |
+        if [ ! -f buildozer.spec ]; then
+          buildozer init
+        fi
+        yes | buildozer -v android debug
 
     - name: Upload APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Calculator-APK
         path: bin/*.apk
