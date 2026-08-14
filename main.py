@@ -1,39 +1,43 @@
-name: Build Android APK
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
 
-on:
-  push:
-    branches: [ main, master ]
-  workflow_dispatch:
+class CalculatorApp(App):
+    def build(self):
+        main_layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        self.solution = TextInput(multiline=False, readonly=True, halign='right', font_size=35)
+        main_layout.add_widget(self.solution)
+        
+        buttons = [
+            ['7', '8', '9', '/'],
+            ['4', '5', '6', '*'],
+            ['1', '2', '3', '-'],
+            ['C', '0', '=', '+']
+        ]
+        
+        grid = GridLayout(cols=4, spacing=5)
+        for row in buttons:
+            for label in row:
+                button = Button(text=label, font_size=28)
+                button.bind(on_press=self.on_button_press)
+                grid.add_widget(button)
+                
+        main_layout.add_widget(grid)
+        return main_layout
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    def on_button_press(self, instance):
+        text = instance.text
+        if text == 'C':
+            self.solution.text = ""
+        elif text == '=':
+            try:
+                self.solution.text = str(eval(self.solution.text))
+            except Exception:
+                self.solution.text = "Error"
+        else:
+            self.solution.text += text
 
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install System Dependencies & Buildozer
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libsqlite3-dev sqlite3 bzip2 libbz2-dev zlib1g-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblldb-dev libffi-dev libreadline-dev libncursesw5-dev libncurses5-dev liblzma-dev tk-dev openjdk-17-jdk
-        pip install --upgrade pip
-        pip install "cython<3.0.0" "buildozer>=1.5.0"
-
-    - name: Build APK with Buildozer
-      run: |
-        if [ ! -f buildozer.spec ]; then
-          buildozer init
-        fi
-        yes | buildozer -v android debug
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: Calculator-APK
-        path: bin/*.apk
+if __name__ == '__main__':
+    CalculatorApp().run()
